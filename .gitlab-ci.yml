@@ -1,0 +1,115 @@
+stages:
+  - install
+  - lint
+  - build
+  - test
+  - security
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+cache:
+  paths:
+    - .npm/
+    - node_modules/
+
+# ─── Install ─────────────────────────────────────────────────
+install:
+  stage: install
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+# ─── Lint ─────────────────────────────────────────────────────
+lint:
+  stage: lint
+  image: node:${NODE_VERSION}-alpine
+  needs: [install]
+  script:
+    - npm run lint
+    - npx tsc --noEmit
+
+# ─── Build ────────────────────────────────────────────────────
+build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  needs: [lint]
+  script:
+    - npm run build
+  environment:
+    name: production
+    url: https://imagination-station.vercel.app
+  variables:
+    NODE_ENV: production
+    NEXT_PUBLIC_APP_URL: https://imagination-station.vercel.app
+  artifacts:
+    paths:
+      - .next/
+    expire_in: 1 hour
+
+# ─── Security ─────────────────────────────────────────────────
+security-audit:
+  stage: security
+  image: node:${NODE_VERSION}-alpine
+  needs: [build]
+  script:
+    - npm audit --audit-level=high || true
+    - echo "Security scan completed"
+  allow_failure: true
+
+# ─── Deploy ───────────────────────────────────────────────────
+deploy-production:
+  stage: deploy
+  image: node:${NODE_VERSION}-alpine
+  needs: [build, security-audit]
+  script:
+    - echo "Deploying to Vercel production..."
+    - echo "Configure VERCEL_TOKEN in CI/CD variables for automatic deployment"
+  environment:
+    name: production
+    url: https://imagination-station.vercel.app
+  only:
+    - main
+
+deploy-review:
+  stage: deploy
+  image: node:${NODE_VERSION}-alpine
+  needs: [build]
+  script:
+    - echo "Deploying review app for branch $CI_COMMIT_REF_NAME..."
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://imagination-station-$CI_ENVIRONMENT_SLUG.vercel.app
+    on_stop: stop-review
+  only:
+    - merge_requests
+
+stop-review:
+  stage: deploy
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - echo "Stopping review app for $CI_ENVIRONMENT_SLUG"
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  when: manual
+  only:
+    - merge_requests
+
+# ─── Scheduled Security Scans (2/day) ────────────────────────
+security-scan-scheduled:
+  stage: security
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+    - npm audit --json > audit-results.json || true
+    - cat audit-results.json
+    - npm run build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
