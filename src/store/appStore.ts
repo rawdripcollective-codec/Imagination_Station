@@ -184,7 +184,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           sessions: state.sessions.map((s) =>
             s.id === sessionId
-              ? { ...s, settings: { ...s.settings, ...settings } }
+              ? { ...s, settings: { ...DEFAULT_MODEL_SETTINGS, ...s.settings, ...settings } as ModelSettings }
               : s
           ),
         })),
