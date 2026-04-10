@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useAppStore } from "@/store/appStore";
 import { Message, ModelSettings } from "@/types";
 import { ALL_MODELS, PRE_INSTALLED_MODELS } from "@/lib/models";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { generateId } from "@/lib/utils";
 import {
   Send,
   Bot,
@@ -54,7 +53,7 @@ export default function AIPlayground({ onOpenSettings }: AIPlaygroundProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
-  const messages = activeSession?.messages || [];
+  const messages = useMemo(() => activeSession?.messages || [], [activeSession?.messages]);
   const allModels = [...PRE_INSTALLED_MODELS, ...ALL_MODELS.filter(m => !PRE_INSTALLED_MODELS.some(pm => pm.id === m.id)), ...(settings.customModels || [])];
 
   useEffect(() => {
