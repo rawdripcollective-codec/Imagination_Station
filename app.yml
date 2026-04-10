@@ -1,0 +1,37 @@
+# GitHub App Manifest for Imagination Station
+# -----------------------------------------------
+# This file describes the GitHub App configuration.
+# Register the app at:
+#   https://github.com/settings/apps/new?manifest=<url-encoded-json>
+#
+# Or use the in-app setup page at /github/setup after deploying.
+
+name: Imagination Station
+url: https://imagination-station.vercel.app
+hook_attributes:
+  url: https://imagination-station.vercel.app/api/github/webhook
+  active: true
+redirect_url: https://imagination-station.vercel.app/api/github/callback
+callback_urls:
+  - https://imagination-station.vercel.app/api/github/callback
+setup_url: https://imagination-station.vercel.app/github/setup
+setup_on_update: true
+description: >
+  The ultimate AI-powered writing and coding assistant. Analyse your
+  repositories with frontier AI models (GPT-4o, Claude, Gemini, Mistral,
+  Kimi K2, DeepSeek) and let Imagination Station write code, review pull
+  requests, and answer questions about your codebase — all from one
+  beautiful interface.
+public: true
+default_permissions:
+  contents: read
+  issues: write
+  pull_requests: write
+  metadata: read
+default_events:
+  - push
+  - pull_request
+  - issues
+  - issue_comment
+  - pull_request_review
+  - pull_request_review_comment
